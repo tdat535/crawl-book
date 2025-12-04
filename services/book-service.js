@@ -223,9 +223,9 @@ async function getFromFahasa(isbn) {
     // Bắt buộc dùng Chrome cài sẵn trên server
     const browser = await puppeteer.launch({
         headless: true,
-        executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome",
         args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
     });
+
 
     const page = await browser.newPage();
     await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36");
