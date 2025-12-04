@@ -222,7 +222,6 @@ async function getFromFahasa(isbn) {
 
     const browser = await puppeteer.launch({
         headless: true,
-        executablePath: process.env.CHROME_PATH || undefined, // dùng Chrome có sẵn
         args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
     });
 
