@@ -234,7 +234,7 @@ async function getFromFahasa(isbn) {
         );
 
         await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await page.waitForTimeout(3000);
+        await new Promise(resolve => setTimeout(resolve, 3000));
 
         const result = await page.evaluate(() => {
             const first = document.querySelector("ul.products-grid.fhs-top li");
