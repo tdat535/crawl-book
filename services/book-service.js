@@ -220,19 +220,22 @@ function extractISBN(text) {
 async function getFromFahasa(isbn) {
     const searchUrl = `https://www.fahasa.com/searchengine?q=${isbn}`;
 
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-    });
-
-    const page = await browser.newPage();
-    await page.setUserAgent(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
-    );
-
+    let browser;
     try {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        });
+
+        const page = await browser.newPage();
+        await page.setUserAgent(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"
+        );
+
         await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-        await page.waitForTimeout(3000); // chờ lazy load
+
+        // chờ 3s để trang render lazy load
+        await page.waitForTimeout(3000);
 
         const result = await page.evaluate(() => {
             const first = document.querySelector("ul.products-grid.fhs-top li");
@@ -253,19 +256,20 @@ async function getFromFahasa(isbn) {
 
         if (!result || !result.link) return null;
 
-        return normalizeBook({
+        return {
             source: "Fahasa",
-            title: result.title,
+            title: result.title || "",
             isbn,
-            price: result.price,
-            thumbnail: result.thumbnail,
-            link: result.link
-        });
+            price: result.price || "",
+            thumbnail: result.thumbnail || "",
+            link: result.link || ""
+        };
+
     } catch (err) {
-        console.error("Fahasa error:", err);
+        console.error("Fahasa error:", err.message);
         return null;
     } finally {
-        await browser.close();
+        if (browser) await browser.close();
     }
 }
 
