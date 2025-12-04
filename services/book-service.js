@@ -220,29 +220,22 @@ function extractISBN(text) {
 async function getFromFahasa(isbn) {
     const searchUrl = `https://www.fahasa.com/searchengine?q=${isbn}`;
 
+    // Bắt buộc dùng Chrome cài sẵn trên server
     const browser = await puppeteer.launch({
         headless: true,
-        executablePath: puppeteer.executablePath(), // <== QUAN TRỌNG
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-        ]
+        executablePath: process.env.CHROME_PATH || "/usr/bin/google-chrome",
+        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
     });
 
     const page = await browser.newPage();
-
-    await page.setUserAgent(
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-    );
+    await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36");
 
     try {
         await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-
-        // đợi trang render lazy load
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        await page.waitForTimeout(3000); // đợi lazy load
 
         const result = await page.evaluate(() => {
-            const first = document.querySelector("ul.products-grid.fhs-top > li");
+            const first = document.querySelector("ul.products-grid.fhs-top li");
             if (!first) return null;
 
             const linkEl = first.querySelector("a[href]");
@@ -262,10 +255,11 @@ async function getFromFahasa(isbn) {
 
         return normalizeBook({
             source: "Fahasa",
-            title: result.title || "",
-            isbn: isbn,
-            thumbnail: result.thumbnail || "",
-            link: result.link || ""
+            title: result.title,
+            isbn,
+            price: result.price,
+            thumbnail: result.thumbnail,
+            link: result.link
         });
 
     } catch (err) {
