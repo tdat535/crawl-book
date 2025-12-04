@@ -1,8 +1,7 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
-const puppeteer = require("puppeteer-extra");
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-puppeteer.use(StealthPlugin());
+const puppeteerCore = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 
 function normalizeBook({
     source = "",
@@ -222,9 +221,11 @@ async function getFromFahasa(isbn) {
 
     let browser;
     try {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+        browser = await puppeteerCore.launch({
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath(),
+            headless: chromium.headless,
         });
 
         const page = await browser.newPage();
@@ -233,8 +234,6 @@ async function getFromFahasa(isbn) {
         );
 
         await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-
-        // chờ 3s để trang render lazy load
         await page.waitForTimeout(3000);
 
         const result = await page.evaluate(() => {
@@ -256,14 +255,14 @@ async function getFromFahasa(isbn) {
 
         if (!result || !result.link) return null;
 
-        return {
+        return normalizeBook({
             source: "Fahasa",
             title: result.title || "",
             isbn,
             price: result.price || "",
             thumbnail: result.thumbnail || "",
             link: result.link || ""
-        };
+        });
 
     } catch (err) {
         console.error("Fahasa error:", err.message);
@@ -361,4 +360,12 @@ async function getFromVinabook(isbn) {
 }
 
 
-module.exports = { getFromGoogleBooks, getFromMinhKhai, getFromPhuongNam, getBookFromNhanVan, getFromCanTho, getFromFahasa, getFromVinabook };
+module.exports = { 
+    getFromGoogleBooks, 
+    getFromMinhKhai, 
+    getFromPhuongNam, 
+    getBookFromNhanVan, 
+    getFromCanTho, 
+    getFromFahasa, 
+    getFromVinabook 
+};
